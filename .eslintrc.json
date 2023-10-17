@@ -1,0 +1,32 @@
+{
+	/* https://eslint.org/docs/user-guide/configuring */
+	"extends": "eslint:recommended",
+	"env": {
+		"node": true,
+		"es6": true,
+		"browser": false,
+		"jquery": false
+	},
+	"parserOptions": {
+		"ecmaVersion": 6,
+		"sourceType": "module"
+	},
+	"rules": {
+		/* https://eslint.org/docs/rules/ */
+		"arrow-parens": ["warn", "always"],
+		"arrow-spacing": ["warn", {"after": true, "before": true}],
+		"eol-last": ["error", "always"],
+		"indent": ["error", "tab", {"SwitchCase": 1}],
+		"linebreak-style": ["error", "unix"],
+		"no-empty": ["warn", { "allowEmptyCatch": true }],
+		"no-unused-vars": ["warn", {"args": "none", "vars": "local" }],
+		"prefer-const": ["error", {
+			"destructuring": "all",
+			"ignoreReadBeforeAssign": true
+		}],
+		"quotes": ["warn", "single"],
+		"semi": ["warn", "never"],
+		"space-in-parens": ["error", "never"],
+		"spaced-comment": ["error", "always"]
+	}
+}

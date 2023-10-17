@@ -1,0 +1,7 @@
+{
+	"lemmy": {
+		"instance": "https://jlai.lu",
+		"user": "tournesol_bot",
+		"password": "<PASSWORD>"
+	}
+}
