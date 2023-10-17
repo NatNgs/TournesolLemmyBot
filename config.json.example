@@ -1,7 +1,13 @@
 {
 	"lemmy": {
-		"instance": "https://jlai.lu",
-		"user": "tournesol_bot",
+		"instance": "https://lemmy.world",
+		"user": "<USER OR EMAIL>",
 		"password": "<PASSWORD>"
-	}
+	},
+	"filter": {
+		"sort": "TopSixMonths", // "Active" | "Hot" | "New" | "Old" | "TopDay" | "TopWeek" | "TopMonth" | "TopYear" | "TopAll" | "MostComments" | "NewComments" | "TopHour" | "TopSixHour" | "TopTwelveHour" | "TopThreeMonths" | "TopSixMonths" | "TopNineMonths"
+		"date_after": "2000-12-31T23:59:59"
+	},
+	"ms_wait_between_call_to_tournesol_api": 2500,
+	"minutes_to_wait_between_comments": 15
 }
