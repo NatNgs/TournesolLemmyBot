@@ -1,10 +1,12 @@
 import { LemmyHttp } from 'lemmy-js-client'
 import { createRequire } from 'module'
 import https from 'https'
-
 const loadJson = createRequire(import.meta.url)
 
+// Constants
 const CONFIG = loadJson("../config.json")
+const LEMMY_CLIENT = new LemmyHttp(CONFIG.lemmy.instance)
+const LNG = {'fr': 47, 'en': 37}
 
 // Cache
 const tournesolMap = {} // vid: tournesol object
@@ -19,7 +21,7 @@ async function login() {
 		password: CONFIG.lemmy.password,
 	};
 	console.log('## -->', 'login', CONFIG.lemmy.user)
-	const response = (await client.login(loginForm))
+	const response = (await LEMMY_CLIENT.login(loginForm))
 	return response.jwt
 }
 
@@ -33,10 +35,10 @@ async function getSelfCommentsPosts(auth) {
 			username: CONFIG.lemmy.user,
 			limit: PER_PAGE,
 			page: page,
-			sort: CONFIG.filter.sort,
+			sort: CONFIG.sort,
 		}
 		console.log('## -->', 'getPersonDetails', CONFIG.lemmy.user, 'page', page)
-		const response = (await client.getPersonDetails(getPersonDetailsRequest)).comments
+		const response = (await LEMMY_CLIENT.getPersonDetails(getPersonDetailsRequest)).comments
 
 		if(!response.length) {
 			break
@@ -63,7 +65,7 @@ async function getCommunities(auth) {
 			limit: PER_PAGE,
 		}
 		console.log('## -->', 'listCommunities', 'page', page)
-		const response = (await client.listCommunities(listCommunitiesRequest)).communities
+		const response = (await LEMMY_CLIENT.listCommunities(listCommunitiesRequest)).communities
 
 		if(!response.length) {
 			break
@@ -85,12 +87,12 @@ async function getCommunityPosts(auth, community, page) {
 	let getPostsRequest = {
 		auth: auth,
 		community_id: community.id,
-		sort: CONFIG.filter.sort,
+		sort: CONFIG.sort,
 		page: page,
 		limit: PER_PAGE,
 	}
 	console.log('## -->', 'getPosts', community.actor_id, 'page', page)
-	const response = (await client.getPosts(getPostsRequest)).posts
+	const response = (await LEMMY_CLIENT.getPosts(getPostsRequest)).posts
 
 	for(const p of response) {
 		if(!p.removed && !p.deleted && !p.locked) {
@@ -101,8 +103,7 @@ async function getCommunityPosts(auth, community, page) {
 	return posts;
 }
 
-const LNG = {'fr': 47, 'en': 37}
-async function sendComment(post, content, lng) {
+async function sendComment(auth, post, content, lng) {
 	const auth = await login()
 
 	let createCommentRequest = {
@@ -112,7 +113,7 @@ async function sendComment(post, content, lng) {
 		post_id: post.id
 	}
 	console.log('\n## -->', 'createComment')
-	const response = (await client.createComment(createCommentRequest)).comment_view.comment
+	const response = (await LEMMY_CLIENT.createComment(createCommentRequest)).comment_view.comment
 	console.log(response.ap_id, 'published on', response.published, '\n')
 }
 
@@ -151,8 +152,13 @@ async function sleep(ms) {
  * #############################
  **/
 
-async function processPost(post, alreadyCommentedPosts) {
+
+async function processPost(auth, post, alreadyCommentedPosts) {
 	// Check post date
+	if(post.published > CONFIG.filter.date_before) {
+		return
+	}
+
 	if(post.updated) {
 		if(post.updated < CONFIG.filter.date_after) {
 			return
@@ -238,7 +244,7 @@ Penses-tu qu'elle doive être recommandée ? Si c'est le cas, n'hésite pas à l
 	}
 
 	// Send the actual message
-	await sendComment(post, message, tournesol.metadata.language)
+	await sendComment(auth, post, message, tournesol.metadata.language)
 
 	// Wait a bit before to continue
 	console.log('Message sent, waiting some time before continuing to avoid spamming')
@@ -248,47 +254,54 @@ Penses-tu qu'elle doive être recommandée ? Si c'est le cas, n'hésite pas à l
 	}
 }
 
+async function main() {
+
+	const jwt = await login()
+
+	const alreadyCommented = await getSelfCommentsPosts(jwt)
+	console.log('Already replied to ' + alreadyCommented.length + ' posts')
+	const alreadyCommentedPosts = alreadyCommented.map(c=>c.post_id)
+
+	const communities = await getCommunities(jwt)
+	console.log('Listed', communities.length, 'communities')
+
+	const stopped = []
+	let page = 1
+	while(stopped.length < communities.length) {
+		for(const community of communities) {
+			if(community.id in stopped) continue
+			let posts = []
+			try {
+				posts = await getCommunityPosts(jwt, community, page)
+
+				// Shortcut
+				if(CONFIG.sort === 'Old' && posts.length && posts[posts.length-1].published > CONFIG.filter.date_before) {
+					stopped.push(community.id)
+				}
+			} catch(e) {
+				console.log(e)
+			}
+			if(!posts.length) {
+				console.log('No more posts found for', community.actor_id)
+				stopped.push(community.id)
+				continue
+			}
+			console.log('Posts found', posts.length)
+
+			posts.sort((a,b)=>{
+				return a.published < b.published ? -1 : 1;
+			})
+
+			for(const post of posts) {
+				await processPost(jwt, post, alreadyCommentedPosts)
+			}
+		}
+	}
+
+}
 
 /**
  * #############################
  **/
 
-let client = new LemmyHttp(CONFIG.lemmy.instance)
-
-const jwt = await login()
-
-const alreadyCommented = await getSelfCommentsPosts(jwt)
-console.log('Already replied to ' + alreadyCommented.length + ' posts')
-const alreadyCommentedPosts = alreadyCommented.map(c=>c.post_id)
-
-const communities = await getCommunities(jwt)
-console.log('Listed', communities.length, 'communities')
-
-const stopped = []
-let page = 1
-while(stopped.length < communities.length) {
-	for(const community of communities) {
-		if(community.id in stopped) continue
-		let posts = []
-		try {
-			posts = await getCommunityPosts(jwt, community, page)
-		} catch(e) {
-			console.log(e)
-		}
-		if(!posts.length) {
-			console.log('No more posts found for', community.actor_id)
-			stopped.push(community.id)
-			continue
-		}
-		console.log('Posts found', posts.length)
-
-		posts.sort((a,b)=>{
-			return a.published < b.published ? -1 : 1;
-		})
-
-		for(const post of posts) {
-			await processPost(post, alreadyCommentedPosts)
-		}
-	}
-
-}
+await main()
