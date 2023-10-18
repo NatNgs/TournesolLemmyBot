@@ -25,12 +25,9 @@ async function login() {
 
 async function getSelfCommentsPosts(auth) {
 	const PER_PAGE=50
-	let page=1
 
 	const allSelfComments = []
-
-	while(true) {
-
+	for(let page=1; true; page++) {
 		let getPersonDetailsRequest = {
 			auth: auth,
 			username: CONFIG.lemmy.user,
@@ -38,28 +35,25 @@ async function getSelfCommentsPosts(auth) {
 			page: page,
 			sort: CONFIG.filter.sort,
 		}
-		console.log('## -->', 'getPersonDetails', CONFIG.lemmy.user, page)
+		console.log('## -->', 'getPersonDetails', CONFIG.lemmy.user, 'page', page)
 		const response = (await client.getPersonDetails(getPersonDetailsRequest)).comments
+
+		if(!response.length) {
+			break
+		}
 
 		for(const c of response) {
 			allSelfComments.push(c.comment)
 		}
-
-		if(response.length < PER_PAGE) {
-			break
-		}
-		page++
 	}
 	return allSelfComments;
 }
 
 async function getCommunities(auth) {
 	const PER_PAGE=50
-	let page=1
 
 	const allCommunities = []
-
-	while(true) {
+	for(let page=1; true; page++) {
 
 		let listCommunitiesRequest = {
 			auth: auth,
@@ -68,25 +62,24 @@ async function getCommunities(auth) {
 			page: page,
 			limit: PER_PAGE,
 		}
-		console.log('## -->', 'listCommunities', page)
+		console.log('## -->', 'listCommunities', 'page', page)
 		const response = (await client.listCommunities(listCommunitiesRequest)).communities
 
+		if(!response.length) {
+			break
+		}
 		for(const c of response) {
 			if(!c.blocked) {
 				allCommunities.push(c.community)
 			}
 		}
 
-		if(response.length < PER_PAGE) {
-			break
-		}
-		page++
 	}
 	return allCommunities;
 }
 
 async function getCommunityPosts(auth, community, page) {
-	const PER_PAGE=50
+	const PER_PAGE=10
 	const posts = [];
 
 	let getPostsRequest = {
@@ -125,14 +118,15 @@ async function sendComment(post, content, lng) {
 
 async function callTournesol(vid) {
 	return new Promise((resolve,reject)=>{
-		const req = https.get('https://api.tournesol.app/entities/yt:' + vid + '/', res => {
+		console.log('\n## -->', 'tournesol', vid)
+		https.get('https://api.tournesol.app/entities/yt:' + vid + '/', res => {
 			let data = ''
 			res.on('data', chunk => data += chunk)
 			res.on('error', reject);
 			res.on('end', () => {
 				try {
-					if(res.statusCode !== 404) {
-						console.log('https://api.tournesol.app/entities/yt:' + vid + '/', 'responded with code:', res.statusCode)
+					if(res.statusCode !== 200 && res.statusCode !== 404) {
+						console.warn('https://api.tournesol.app/entities/yt:' + vid + '/', 'responded with code:', res.statusCode)
 					}
 					if(res.statusCode >= 300) {
 						return reject(res.statusCode)
