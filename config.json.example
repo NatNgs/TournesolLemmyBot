@@ -4,9 +4,10 @@
 		"user": "<USER OR EMAIL>",
 		"password": "<PASSWORD>"
 	},
+	"sort": "TopSixMonths", // "Active" | "Hot" | "New" | "Old" | "TopDay" | "TopWeek" | "TopMonth" | "TopYear" | "TopAll" | "MostComments" | "NewComments" | "TopHour" | "TopSixHour" | "TopTwelveHour" | "TopThreeMonths" | "TopSixMonths" | "TopNineMonths"
 	"filter": {
-		"sort": "TopSixMonths", // "Active" | "Hot" | "New" | "Old" | "TopDay" | "TopWeek" | "TopMonth" | "TopYear" | "TopAll" | "MostComments" | "NewComments" | "TopHour" | "TopSixHour" | "TopTwelveHour" | "TopThreeMonths" | "TopSixMonths" | "TopNineMonths"
-		"date_after": "2000-12-31T23:59:59"
+		"date_after": "2000-12-31T23:59:59",
+		"date_before": "2999-12-31T23:59:59"
 	},
 	"ms_wait_between_call_to_tournesol_api": 2500,
 	"minutes_to_wait_between_comments": 15
