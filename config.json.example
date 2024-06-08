@@ -1,14 +1,18 @@
 {
 	"lemmy": {
 		"instance": "https://lemmy.world",
-		"user": "<USER OR EMAIL>",
+		"user": "<USER>",
 		"password": "<PASSWORD>"
 	},
 	"sort": "TopSixMonths", // "Active" | "Hot" | "New" | "Old" | "TopDay" | "TopWeek" | "TopMonth" | "TopYear" | "TopAll" | "MostComments" | "NewComments" | "TopHour" | "TopSixHour" | "TopTwelveHour" | "TopThreeMonths" | "TopSixMonths" | "TopNineMonths"
 	"filter": {
-		"date_after": "2000-12-31T23:59:59",
-		"date_before": "2999-12-31T23:59:59"
+		"min_days_old": 31, // Post must have at least this age to be included
+		"date_after": "2000-12-31T23:59:59", // Post mus have been posted before this date to be included
+
+		"max_days_old": 365, // Posts with last update older than this will be ignored
+		"date_before": "2999-12-31T23:59:59", // Post with last update is before this date will be ignored
 	},
 	"ms_wait_between_call_to_tournesol_api": 2500,
-	"minutes_to_wait_between_comments": 15
+	"minutes_to_wait_between_comments": 15,
+	"fake_sending_comments": false, // if true, will not actually send comments (for debugging) - Will also ignore "minutes_to_wait_between_comments"
 }
