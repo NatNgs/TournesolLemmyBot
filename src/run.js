@@ -96,6 +96,10 @@ async function getSelfCommentsPosts(auth) {
 }
 
 async function isSelfCommented(auth, post) {
+	if(post.creator.name === CONFIG.lemmy.user) {
+		return -1
+	}
+
 	const PER_PAGE = 50
 	let cmcnts = 0
 	for(let page = 1; true; page++) {
@@ -191,7 +195,7 @@ async function getCommunities(auth) {
 }
 
 async function getCommunityPosts(auth, community, page) {
-	const PER_PAGE=10
+	const PER_PAGE=50
 	const posts = [];
 
 	let getPostsRequest = {
@@ -206,6 +210,8 @@ async function getCommunityPosts(auth, community, page) {
 
 	for(const p of response) {
 		if(!p.removed && !p.deleted && !p.locked && (p.counts?.upvotes||0) >= (p.counts?.downvotes||0)) {
+			p.post.creator = p.creator
+			p.post.community = p.community
 			posts.push(p.post)
 		}
 	}
@@ -490,7 +496,15 @@ async function main() {
 				}
 				const anythingWasPosted = await processPost(jwt, post)
 				if(anythingWasPosted) {
-					console.log(post)
+					// console.log(post)
+					console.log({
+						post: post.ap_id,
+						community: post.community.actor_id,
+						op: post.creator.actor_id,
+						title: post.name,
+						link: post.url,
+						vid: post.vid,
+					})
 					stopped.push(community.id)
 
 					if(!CONFIG.fake_sending_comments) {
